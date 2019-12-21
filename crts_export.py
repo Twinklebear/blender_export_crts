@@ -13,7 +13,7 @@ bl_info = {
     "location": "File > Import-Export",
     "description": "Export the scene to a ChameleonRT scene",
     "category": "Import-Export",
-    "wiki_url": "online"
+    "wiki_url": "https://github.com/Twinklebear/blender_export_crts"
 }
 
 def compute_mesh_buffer_sizes(mesh):

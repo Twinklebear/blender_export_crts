@@ -76,13 +76,19 @@ def write_mesh_info(meshes, header, byte_offset):
 def write_image_info(images, header, byte_offset):
     image_indices = {}
     for img in bpy.data.images:
+        # TODO: For generated textures how could we bake them to images?
+        # we could evaluate it to create a new image, pack that image into
+        # the blend file temporarily to generate a PNG we can embed, then
+        # delete the temp file when we're done exporting
+        if img.source != "FILE":
+            print("Skipping {}, non-file image sources are not supported".format(img.name))
+            continue
         img_bytes = 0
         if img.packed_file:
             img_bytes = img.packed_file.size
         else:
             path = img.filepath_from_user()
             if not os.path.isfile(path):
-                # TODO: Handle generated textures?
                 print("Image file {} is not packed and not on disk, skipping".format(img.name))
                 continue
             img_bytes = os.path.getsize(path)

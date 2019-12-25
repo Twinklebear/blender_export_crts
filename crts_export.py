@@ -11,7 +11,7 @@ bl_info = {
     "name": "crts_export",
     "author": "Will Usher",
     "blender": (2, 80, 0),
-    "version": (1, 1, 0),
+    "version": (1, 2, 0),
     "location": "File > Import-Export",
     "description": "Export the scene to a ChameleonRT scene",
     "category": "Import-Export",
@@ -100,12 +100,31 @@ def write_image_info(images, header, byte_offset):
         })
         byte_offset += img_bytes
         image_indices[img.name] = len(header["images"])
+        color_space = "sRGB"
+        if img.colorspace_settings.name != "sRGB":
+            color_space = "LINEAR"
         header["images"].append({
             "name": img.name,
             "view": view,
-            "type": img.file_format
+            "type": img.file_format,
+            "color_space": color_space            
         })
     return byte_offset, image_indices
+
+def get_seprgb_texture_info(link):
+    from_node = link.from_node
+    if from_node.type != "SEPRGB":
+        print("Only Separate RGB nodes may be input to metallic, found {}".format(from_node.type))
+        return None
+    else:
+        channel = link.from_socket.name
+        if channel == "R":
+            channel = 0
+        elif channel == "G":
+            channel = 1
+        else:
+            channel = 2
+        return (from_node.inputs["Image"].links[0].from_node.image, channel)
 
 def write_material_info(materials, header, image_indices):
     material_indices = {}
@@ -123,6 +142,9 @@ def write_material_info(materials, header, image_indices):
         mat = {
             "name": m.name
         }
+        export_param_list = ["Metallic", "Specular", "Specular Tint", "Roughness",
+            "Anisotropic", "Sheen", "Sheen Tint", "Clearcoat", "Clearcoat Roughness",
+            "IOR", "Transmission"]
         for i in principled_node.inputs:
             if i.name == "Base Color":
                 mat["base_color"] = [i.default_value[0], i.default_value[1], i.default_value[2]]
@@ -137,30 +159,16 @@ def write_material_info(materials, header, image_indices):
                     else:
                         print("Skipping assignment of base color texture {} for material {}"
                                 .format(texture.image.name, m.name))
-            elif i.name == "Metallic":
-                mat["metallic"] = i.default_value
-            elif i.name == "Specular":
-                mat["specular"] = i.default_value
-            elif i.name == "Specular Tint":
-                mat["specular_tint"] = i.default_value
-            elif i.name == "Roughness":
-                mat["roughness"] = i.default_value
-            elif i.name == "Anisotropic":
-                mat["anisotropy"] = i.default_value
-            elif i.name == "Sheen":
-                mat["sheen"] = i.default_value
-            elif i.name == "Sheen Tint":
-                mat["sheen_tint"] = i.default_value
-            elif i.name == "Clearcoat":
-                mat["clearcoat"] = i.default_value
-            elif i.name == "Clearcoat Roughness":
-                mat["clearcoat_gloss"] = i.default_value
-            elif i.name == "IOR":
-                mat["ior"] = i.default_value
-            elif i.name == "Transmission":
-                # Note: we treat roughness as global instead of separating transmission
-                # vs. reflection rougness
-                mat["specular_transmission"] = i.default_value        
+            elif i.name in export_param_list:
+                json_name = i.name.lower().replace(" ", "_")
+                mat[json_name] = i.default_value
+                if len(i.links) > 0:
+                    tex_info = get_seprgb_texture_info(i.links[0])
+                    if tex_info:
+                        mat[json_name + "_texture"] = {
+                            "texture": image_indices[tex_info[0].name],
+                            "channel": tex_info[1]
+                        }
         header["materials"].append(mat)
     return material_indices
 

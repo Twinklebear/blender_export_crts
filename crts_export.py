@@ -114,7 +114,8 @@ def write_image_info(images, header, byte_offset):
 def get_seprgb_texture_info(link):
     from_node = link.from_node
     if from_node.type != "SEPRGB":
-        print("Only Separate RGB nodes may be input to metallic, found {}".format(from_node.type))
+        print("Only Separate RGB nodes may be input to scalar material property, found {}"
+                .format(from_node.type))
         return None
     else:
         channel = link.from_socket.name

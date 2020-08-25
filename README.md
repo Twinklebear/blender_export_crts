@@ -13,5 +13,5 @@ the instance level instead of the primitive level, to allow
 easy instancing of primitives with different materials.
 
 For now an example importer can be found in
-[ChameleonRT](https://github.com/Twinklebear/ChameleonRT/blob/crts/util/scene.cpp#L363-L475).
+[ChameleonRT](https://github.com/Twinklebear/ChameleonRT/blob/master/util/scene.cpp).
 

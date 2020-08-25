@@ -5,8 +5,8 @@ This is a plgin to export files in a glb-like format used by
 The main differences are that CRTS uses the
 Disney Principled BSDF material mode, supports area lights,
 and does not support node hierarchies. The mesh/instance model
-also differs slightly, since Blender only supports a primitive
-primitive per-mesh vs. glTF which can store multiple primitives
+also differs slightly, since Blender only supports one primitive
+per-mesh vs. glTF which can store multiple primitives
 per-mesh. Since this plugin is just for a final export of Blender to
 ChameleonRT it does the former. Material IDs are specified at
 the instance level instead of the primitive level, to allow

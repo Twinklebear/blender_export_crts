@@ -11,7 +11,7 @@ bl_info = {
     "name": "crts_export",
     "author": "Will Usher",
     "blender": (2, 80, 0),
-    "version": (1, 3, 0),
+    "version": (1, 4, 0),
     "location": "File > Import-Export",
     "description": "Export the scene to a ChameleonRT scene",
     "category": "Import-Export",
@@ -25,13 +25,14 @@ def compute_mesh_buffer_sizes(mesh):
     for t in mesh.loop_triangles:
         for l in t.loops:
             vert_idx = mesh.loops[l].vertex_index
-            uv = (mesh.uv_layers.active.data[l].uv[0], mesh.uv_layers.active.data[l].uv[1])
             uv_idx = -1
-            if uv not in uvs:
-                uvs[uv] = l
-                uv_idx = l
-            else:
-                uv_idx = uvs[uv]
+            if len(mesh.uv_layers) > 0:
+                uv = (mesh.uv_layers.active.data[l].uv[0], mesh.uv_layers.active.data[l].uv[1])
+                if uv not in uvs:
+                    uvs[uv] = l
+                    uv_idx = l
+                else:
+                    uv_idx = uvs[uv]
             
             normal = (mesh.loops[l].normal[0], mesh.loops[l].normal[1], mesh.loops[l].normal[2])
             n_idx = -1
@@ -46,7 +47,10 @@ def compute_mesh_buffer_sizes(mesh):
                 vid = len(unique_verts)
                 unique_verts[idx] = vid
     n_verts = len(unique_verts)
-    return (n_verts * 3 * 4, len(mesh.loop_triangles) * 3 * 4, n_verts * 2 * 4, n_verts * 3 * 4)
+    uvs_size = 0
+    if len(uvs) > 0:
+        uvs_size = n_verts * 2 * 4
+    return (n_verts * 3 * 4, len(mesh.loop_triangles) * 3 * 4, uvs_size, n_verts * 3 * 4)
 
 def write_mesh_info(meshes, header, byte_offset):
     mesh_indices = {}
@@ -172,10 +176,11 @@ def write_material_info(materials, header, image_indices):
         
         # No support for shader node graphs/etc. just take the principled BSDF node
         principled_node = None
-        for n in m.node_tree.nodes:
-            if n.type == "BSDF_PRINCIPLED":
-                principled_node = n
-                break
+        if m.node_tree:
+            for n in m.node_tree.nodes:
+                if n.type == "BSDF_PRINCIPLED":
+                    principled_node = n
+                    break
         if not principled_node:
             print("Error: Unsupported Material {}, no Principled BSDF found!".format(m.name))
             continue
@@ -258,13 +263,15 @@ def write_mesh_buffers(mesh, output):
     for t in mesh.loop_triangles:
         for l in t.loops:
             vert_idx = mesh.loops[l].vertex_index
-            uv = (mesh.uv_layers.active.data[l].uv[0], mesh.uv_layers.active.data[l].uv[1])
+
             uv_idx = -1
-            if uv not in uvs:
-                uvs[uv] = l
-                uv_idx = l
-            else:
-                uv_idx = uvs[uv]
+            if len(mesh.uv_layers) > 0:
+                uv = (mesh.uv_layers.active.data[l].uv[0], mesh.uv_layers.active.data[l].uv[1])
+                if uv not in uvs:
+                    uvs[uv] = l
+                    uv_idx = l
+                else:
+                    uv_idx = uvs[uv]
                 
             normal = (mesh.loops[l].normal[0], mesh.loops[l].normal[1], mesh.loops[l].normal[2])
             n_idx = -1
@@ -291,9 +298,10 @@ def write_mesh_buffers(mesh, output):
     for id in vertex_indices:
         output.extend(struct.pack("<I", id))
 
-    for v in vertex_list:
-        uv = [mesh.uv_layers.active.data[v[1]].uv[0], mesh.uv_layers.active.data[v[1]].uv[1]]
-        output.extend(struct.pack("<ff", uv[0], uv[1]))
+    if len(mesh.uv_layers) > 0:
+        for v in vertex_list:
+            uv = [mesh.uv_layers.active.data[v[1]].uv[0], mesh.uv_layers.active.data[v[1]].uv[1]]
+            output.extend(struct.pack("<ff", uv[0], uv[1]))
 
     for v in vertex_list:
         normal = [mesh.loops[v[2]].normal[0], mesh.loops[v[2]].normal[1], mesh.loops[v[2]].normal[2]]

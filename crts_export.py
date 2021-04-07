@@ -243,7 +243,7 @@ def write_object_info(objects, header, material_indices, mesh_indices):
             if light.type != "AREA":
                 print("Only area lights are supported")
             obj_data["color"] = [light.color.r, light.color.g, light.color.b]
-            obj_data["energy"] = light.energy
+            obj_data["energy"] = light.energy / (light.size * light.size_y)
             obj_data["size"] = [light.size, light.size_y]
         elif o.type == "CAMERA":
             cam = o.data

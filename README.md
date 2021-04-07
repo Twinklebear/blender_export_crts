@@ -1,6 +1,6 @@
 # Blender CRTS Exporter Plugin
 
-This is a plgin to export files in a glb-like format used by
+This is a plugin to export files in a glb-like format used by
 [ChameleonRT](https://github.com/Twinklebear/ChameleonRT).
 The main differences are that CRTS uses the
 Disney Principled BSDF material mode, supports area lights,

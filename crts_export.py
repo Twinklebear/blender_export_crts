@@ -245,6 +245,21 @@ def write_object_info(objects, header, material_indices, mesh_indices):
             obj_data["color"] = [light.color.r, light.color.g, light.color.b]
             obj_data["energy"] = light.energy / (light.size * light.size_y)
             obj_data["size"] = [light.size, light.size_y]
+
+            # Correct the light normal to match Blender by flipping z-axis
+            obj_data["matrix"][8] = -obj_data["matrix"][8];
+            obj_data["matrix"][9] = -obj_data["matrix"][9];
+            obj_data["matrix"][10] = -obj_data["matrix"][10];
+
+            # Correct the light position: Blender places the origin at the light's
+            # center, however ChameleonRT places it at the bottom-left corner
+            v_x = mathutils.Vector((obj_data["matrix"][0], obj_data["matrix"][1], obj_data["matrix"][2]))
+            v_y = mathutils.Vector((obj_data["matrix"][4], obj_data["matrix"][5], obj_data["matrix"][6]))
+            pos = mathutils.Vector((obj_data["matrix"][12], obj_data["matrix"][13], obj_data["matrix"][14]))
+            pos = pos - 0.5 * light.size * v_x - 0.5 * light.size_y * v_y
+            obj_data["matrix"][12] = pos[0]
+            obj_data["matrix"][13] = pos[1]
+            obj_data["matrix"][14] = pos[2]
         elif o.type == "CAMERA":
             cam = o.data
             obj_data["fov_y"] = math.degrees(cam.angle_y)
